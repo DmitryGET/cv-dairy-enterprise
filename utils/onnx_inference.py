@@ -7,8 +7,8 @@ def draw_keypoints(image, keypoints):
     for idx, keypoint in enumerate(keypoints):
         x, y = keypoint
         if x != 0 and y != 0:  # Исключаем точки с нулевыми координатами
-            cv2.circle(image, (x, y), 3, (0, 255, 0), -1)  # Рисуем круговую метку для ключевой точки
-            cv2.putText(image, str(idx + 1), (x+5, y+5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA) # Рисуем индекс рядом с точкой
+            cv2.circle(image, (x, y), 1, (0, 255, 0), -1)  # Рисуем круговую метку для ключевой точки
+            cv2.putText(image, str(idx + 1), (x+5, y+5), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255), 1, cv2.LINE_AA) # Рисуем индекс рядом с точкой
 
     return image
 
@@ -102,11 +102,27 @@ def inference_by_img(
 
     return keypoints
 
+
+def resizer(img, keypoints, new_size):
+    res_img = cv2.resize(img, new_size, cv2.INTER_AREA)
+    res_kpts = np.array(keypoints, dtype=np.float32)
+    scale_x = new_size[0] / img.shape[0]
+    scale_y = new_size[1] / img.shape[1]
+    res_kpts[:, 0] *= scale_x
+    res_kpts[:, 1] *= scale_y
+    return res_img, res_kpts.astype(int)
+
 if __name__ == '__main__':
-    print(inference_by_img(
+    kpts = inference_by_img(
         'dots_0404_ideal.onnx',
         'img/img/000_image_0013079_2020-02-25_13-47-48_roi_001.jpg',
-        draw_kp=True,
+        draw_kp=False,
         is_old_model=False,
+        view=False,
         threshold=0.25
-    ))
+    )
+    img = cv2.resize(cv2.imread('img/img/000_image_0013079_2020-02-25_13-47-48_roi_001.jpg'), (640, 640), cv2.INTER_AREA)
+    new_img, new_kpts = resizer(img, kpts, (128, 128))
+    new_img = draw_keypoints(new_img, new_kpts)
+    cv2.imwrite('test_resizer.jpg', new_img)
+
